@@ -1,4 +1,5 @@
 #include "TCPLib.h"
+#include <time.h>
 
 int boltun_id;
 
@@ -14,16 +15,17 @@ void sendRequest(int sock, struct request *request)
 
 int chooseState()
 {
-    // Возвращает случайное число 0 или 1
+    // Возвращает случайное число 0 или 2
+    srand(time(NULL));
     return rand() % 2;
 }
 
 int getOtherBoltunNumber()
 {
-    int boltun = boltun_id;
-    while (boltun == boltun_id)
+    int boltun = boltun_id - 1;
+    while (boltun == boltun_id - 1)
     {
-        boltun = 1 + rand() % 5;
+        boltun = rand() % 5;
     }
     return boltun;
 }
@@ -96,24 +98,24 @@ int main(int argc, char *argv[])
     while (1)
     {
         // deciding what to do
-        if (request.request_code == 2)
+        if (request.request_code == END_CALL)
         {
-            if (chooseState)
+            if (chooseState())
             {
                 call.id = boltun_id - 1;
-                call.caller_id = boltun_id;
+                call.caller_id = boltun_id - 1;
                 call.receiver_id = getOtherBoltunNumber();
-                request.boltun_id = boltun_id;
+                request.boltun_id = boltun_id - 1;
                 request.request_code = 1;
                 request.call = call;
-                printf("Boltun  #%d is trying to call %d from server\n", boltun_id, call.receiver_id);
+                printf("Boltun  #%d is trying to call %d from server\n", boltun_id, call.receiver_id + 1);
             }
             else
             {
                 call.id = boltun_id - 1;
-                call.caller_id = 0;
-                call.receiver_id = boltun_id;
-                request.boltun_id = boltun_id;
+                call.caller_id = -1;
+                call.receiver_id = boltun_id - 1;
+                request.boltun_id = boltun_id - 1;
                 request.request_code = 0;
                 request.call = call;
                 printf("Boltun  #%d is waiting calls from server\n", boltun_id);
@@ -127,7 +129,7 @@ int main(int argc, char *argv[])
         {
             DieWithError("recv() bad");
         }
-        printf("Boltun  #%d has got the response = %d from server\n", boltun_id, response.response_code);
+        // printf("Boltun  #%d has got the response = %d from server\n", boltun_id, response.response_code);
 
         if (response.response_code == FINISH)
         {
@@ -140,14 +142,16 @@ int main(int argc, char *argv[])
             break;
         case NO_ANSWER:
             sleep(1);
-            request.call = response.call;
+            // request.call = response.call;
             call.receiver_id = getOtherBoltunNumber();
+            request.call = call;
             request.request_code = MAKE_CALL;
+            printf("Boltun  #%d is trying to call %d from server\n", boltun_id, call.receiver_id + 1);
             break;
         case CALL_ACCEPTED:
             sleep(1);
             // imitating conversation
-            printf("This Boltun talking to Boltun #%d \n", response.call.receiver_id);
+            printf("!!!This Boltun talking to Boltun recv #%d \n", response.call.receiver_id + 1);
             request.call = response.call;
             request.request_code = END_CALL;
 
@@ -158,13 +162,13 @@ int main(int argc, char *argv[])
             {
                 DieWithError("recv() bad");
             }
-            printf("Boltun  #%d has got the response = %d from server\n", boltun_id, response.response_code);
+            // printf("Boltun  #%d has got the response = %d from server\n", boltun_id, response.response_code);
 
             break;
         case CALL_RECEIVED:
             sleep(1);
             // imitating conversation
-            printf("This Boltun talking to Boltun #%d \n", response.call.caller_id);
+            printf("!!!This Boltun talking to Boltun caller #%d \n", response.call.receiver_id + 1);
             request.call = response.call;
             request.request_code = END_CALL;
 
@@ -174,7 +178,7 @@ int main(int argc, char *argv[])
             {
                 DieWithError("recv() bad");
             }
-            printf("Boltun  #%d has got the response = %d from server\n", boltun_id, response.response_code);
+            // printf("Boltun  #%d has got the response = %d from server\n", boltun_id, response.response_code);
 
             break;
         case NO_CALL:

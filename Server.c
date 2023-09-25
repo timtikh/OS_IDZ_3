@@ -174,10 +174,17 @@ void findWaiters(struct response *response, struct call *call, int requestAuthor
     {
         if (i != call->id)
         {
-            if (calls[i].receiver_id == call->caller_id && call->receiver_id == i)
+            if (call->receiver_id == calls[i].receiver_id && calls[i].caller_id == -1)
             {
-                printf("Boltun #%d accepted call from boltun %d\n", i, requestAuthor);
-                response->call = calls[i];
+                printf("Boltun #%d accepted call from boltun %d\n", i + 1, requestAuthor + 1);
+                calls[i].caller_id = requestAuthor;
+                // response->call = *call;
+                response->response_code = CALL_ACCEPTED;
+            }
+            if (call->receiver_id == calls[i].caller_id && calls[i].receiver_id == call->caller_id)
+            {
+                printf("Boltun #%d accepted call from boltun %d\n", i + 1, requestAuthor + 1);
+                // response->call = calls[i];
                 response->response_code = CALL_ACCEPTED;
             }
             // add when its just waits;
@@ -246,7 +253,7 @@ void receiveRequest(int sock, struct request *request)
     {
         DieWithError("recv() bad");
     }
-    printf("Server has received request = %d from Boltun %d\n", request->request_code, request->boltun_id);
+    printf("Server has received request = %d from Boltun %d\n", request->request_code, request->boltun_id + 1);
 }
 
 void HandleTCPClient(int clntSocket)
@@ -281,7 +288,7 @@ int main(int argc, char *argv[])
 
     if (argc < 2) /* Test for correct number of arguments */
     {
-        fprintf(stderr, "Аргументы:  %s [SERVER PORT] [CALL_COUNT]\n", argv[0]);
+        fprintf(stderr, "Аргументы:  %s [SERVER PORT] [BOLTUN_COUNT]\n", argv[0]);
         // exit(1);
     }
     else
